@@ -37,7 +37,8 @@ eps = 0.0  # controls convergence criterion
 
 def sigmoid(z):
     # WRITEME: write your code here to complete the routine
-    return -1.0
+    import math
+    return 1 / (1 + math.exp(-z))
 
 
 def predict(X, theta):
@@ -47,7 +48,7 @@ def predict(X, theta):
 
 def regress(X, theta):
     # WRITEME: write your code here to complete the routine
-    return -1.0
+    return np.array([])
 
 
 def bernoulli_log_likelihood(p, y):
@@ -78,7 +79,9 @@ negative = data2[data2['Accepted'].isin([0])]
 
 x1 = data2['Test 1']
 x2 = data2['Test 2']
-
+colors = [int(i % 23) for i in data2['Accepted']]
+plt.scatter(np.asarray(x1), np.asarray(x2), c=colors)
+plt.savefig('scatter_prob3_dataset.png')
 # apply feature map to input features x1 and x2
 cnt = 0
 for i in range(1, degree + 1):
