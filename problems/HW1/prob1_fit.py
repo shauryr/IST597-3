@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 IST 597: Foundations of Deep Learning
 Problem 1: Univariate Regression
 
-@author - Alexander G. Ororbia II
+@author - Shaurya Rohatgi
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,17 +25,20 @@ Problem 1: Univariate Regression
 
 # NOTE: you will need to tinker with the meta-parameters below yourself (do not think of them as defaults by any means)
 # meta-parameters for program
-alpha = 0.02  # step size coefficient
-eps = 0.001  # controls convergence criterion
-n_epoch = 400  # number of epochs (full passes through the dataset)
+alpha = 0.015  # step size coefficient
+eps = 0.00001  # controls convergence criterion
+n_epoch = 10000  # number of epochs (full passes through the dataset)
+
+folder_prefix = './out/prob1_folder/'
 
 
 # begin simulation
-
 def regress(X, theta):
     # WRITEME: write your code here to complete the routine
+    ##############################################################################
     b, w = theta
     y = b + w * X
+    ##############################################################################
     return y
 
 
@@ -46,16 +49,20 @@ def gaussian_log_likelihood(mu, y):
 
 def computeCost(X, y, theta):  # loss is now Bernoulli cross-entropy/log likelihood
     # WRITEME: write your code here to complete the routine
-    return (np.sum((regress(X, theta) - y) ** 2)) / 2 * len(X)
+    ##############################################################################
+    return (np.sum((regress(X, theta) - y) ** 2)) / (2 * len(X))
+    ##############################################################################
 
 
 def computeGrad(X, y, theta):
     # WRITEME: write your code here to complete the routine
     # NOTE: you do not have to use the partial derivative symbols below, they are there to guide your thinking)
+    ##############################################################################
     dL_dfy = None  # derivative w.r.t. to model output units (fy)
-    dL_db = (np.sum(regress(X, theta) - y)) / len(X)  # derivative w.r.t. model weights w
-    dL_dw = (np.sum((regress(X, theta) - y) * X)) / len(X)  # derivative w.r.t model bias b
+    dL_db = (np.sum(regress(X, theta) - y)) / (len(X))  # derivative w.r.t. model weights w
+    dL_dw = (np.dot(X.T, (regress(X, theta) - y))) / (len(X))  # derivative w.r.t model bias b
     nabla = (dL_db, dL_dw)  # nabla represents the full gradient
+    ##############################################################################
     return nabla
 
 
@@ -63,14 +70,21 @@ path = os.getcwd() + '/data/prob1.dat'
 data = pd.read_csv(path, header=None, names=['X', 'Y'])
 
 # display some information about the dataset itself here
+##############################################################################
+print '+++++ DESCRIPTION OF DATA +++++'
 print data.describe()
+print '+++++++++++++++++++++++++++++++'
+##############################################################################
+
 
 # WRITEME: write your code here to create a simple scatterplot of the dataset itself and print/save to disk the result
-plt.scatter(data['X'], data['Y'])
+##############################################################################
+plt.scatter(data['X'], data['Y'], label="Data Point")
 plt.xlabel("x")
 plt.ylabel("y")
-plt.savefig('scatterplot_dataset.png')
-
+plt.legend(loc="best")
+# plt.savefig(folder_prefix + 'scatterplot_dataset.png')
+##############################################################################
 # set X (training data) and y (target variable)
 cols = data.shape[1]
 X = data.iloc[:, 0:cols - 1]
@@ -88,22 +102,26 @@ theta = (b, w)
 L = computeCost(X, y, theta)
 print("-1 L = {0}".format(L))
 L_best = L
-halt = 0
 i = 0
-cost = []  # you can use this list variable to help you create the loss versus epoch plot at the end (if you want)
-while (i < n_epoch and halt == 0):
+cost = [L]  # you can use this list variable to help you create the loss versus epoch plot at the end (if you want)
+while (i < n_epoch):
     dL_db, dL_dw = computeGrad(X, y, theta)
     b = theta[0]
     w = theta[1]
     # update rules go here...
     # WRITEME: write your code here to perform a step of gradient descent & record anything else desired for later
+    ##############################################################################
     b = b - alpha * dL_db
     w = w - alpha * dL_dw
     theta = (b, w)
     # (note: don't forget to override the theta variable...)
     L = computeCost(X, y, theta)  # track our loss after performing a single step
+    if cost[- 1] - L < eps:
+        break
     cost.append(L)
-    print(" {0} L = {1}".format(i, L))
+    if i % 20 == 0:  # print every 20 epochs
+        print(" {0} L = {1}".format(i, L))
+    ##############################################################################
     i += 1
 # print parameter values found after the search
 print("w = ", w)
@@ -122,16 +140,16 @@ plt.xlim((np.amin(X_test) - kludge, np.amax(X_test) + kludge))
 plt.ylim((np.amin(y) - kludge, np.amax(y) + kludge))
 plt.legend(loc="best")
 # WRITEME: write your code here to save plot to disk (look up documentation/inter-webs for matplotlib)
-plt.savefig('scatterplot_regress.png')
+##############################################################################
+# plt.savefig(folder_prefix + 'scatterplot_with_model.png')
+plt.show()
+##############################################################################
+
 # visualize the loss as a function of passes through the dataset
 # WRITEME: write your code here create and save a plot of loss versus epoch
-plt.plot(cost)
+##############################################################################
+plt.plot(cost, color='r', label="LOSS")
+plt.legend(loc="best")
 plt.show()
-
-fig, ax = plt.subplots(1, 2)
-ax[0].plot(X_test, regress(X_test, theta))
-ax[0].set_title('MODEL')
-ax[1].plot(cost, 'r')
-ax[1].set_title('Loss')
-plt.savefig('loss.png')
-# convenience command to force plots to pop up on desktop
+# plt.savefig(folder_prefix + 'loss.png')
+##############################################################################

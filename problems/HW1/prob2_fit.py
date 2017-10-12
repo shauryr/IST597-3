@@ -26,20 +26,23 @@ Problem 2: Polynomial Regression &
 # NOTE: you will need to tinker with the meta-parameters below yourself (do not think of them as defaults by any means)
 # meta-parameters for program
 trial_name = 'p1_fit'  # will add a unique sub-string to output of this program
-degree = 10  # p, order of model
-beta = 1.0  # regularization coefficient
-alpha = 0.1  # step size coefficient
-eps = 0.0  # controls convergence criterion
-n_epoch = 1500  # number of epochs (full passes through the dataset)
+degree = 15  # p, order of model
+beta = 0.1  # regularization coefficient
+alpha = 1  # step size coefficient
+eps = 0.00001  # controls convergence criterion
+n_epoch = 10000  # number of epochs (full passes through the dataset)
+folder_prefix = './out/prob2_folder/'
 
 
 # begin simulation
 
 def regress(X, theta):
     # WRITEME: write your code here to complete the routine
+    ##############################################################################
     X = feature_map(X)
     b, w = theta
     y = b + np.dot(X, w.T)
+    ##############################################################################
     return y
 
 
@@ -50,23 +53,26 @@ def gaussian_log_likelihood(mu, y):
 
 def computeCost(X, y, theta, beta):  # loss is now Bernoulli cross-entropy/log likelihood
     # WRITEME: write your code here to complete the routine
+    ##############################################################################
     m = len(X)
     _, w = theta
-    j_theta = (np.sum((regress(X, theta) - y) ** 2) / 2 * m) + beta * np.sum(w ** 2) / 2 * m
+    j_theta = (np.sum((regress(X, theta) - y) ** 2) / (2 * m)) + (beta * np.sum(w ** 2)) / (2 * m)
+    ##############################################################################
     return j_theta
 
 
 def computeGrad(X, y, theta, beta):
     # WRITEME: write your code here to complete the routine (
     # NOTE: you do not have to use the partial derivative symbols below, they are there to guide your thinking)
+    ##############################################################################
     _, w = theta
-    dL_dfy = None  # derivative w.r.t. to model output units (fy)
-    dL_db = (np.sum(regress(X, theta) - y)) / len(X)  # derivative w.r.t. model weights w
     m = len(X)
+    dL_dfy = None  # derivative w.r.t. to model output units (fy)
+    dL_db = (np.sum(regress(X, theta) - y)) / m  # derivative w.r.t. model weights w
     f_x = regress(X, theta)
-
-    dL_dw = np.dot((f_x - y).T, feature_map(X)) / m + w / m  # derivative w.r.t model bias b
+    dL_dw = np.dot((f_x - y).T, feature_map(X)) / m + ((w * beta) / m)  # derivative w.r.t model bias b
     nabla = (dL_db, dL_dw)  # nabla represents the full gradient
+    ##############################################################################
     return nabla
 
 
@@ -85,6 +91,7 @@ y = np.array(y.values)
 
 # apply feature map to input features x1
 # WRITEME: write code to turn X_feat into a polynomial feature map (hint: you could use a loop and array concatenation)
+##############################################################################
 def feature_map(X):
     poly_X = []
     for j in xrange(len(X)):
@@ -95,11 +102,10 @@ def feature_map(X):
     return np.array(poly_X)
 
 
-# print X
+##############################################################################
 
 # convert to numpy arrays and initalize the parameter array theta 
 w = np.zeros((1, degree))
-print w
 b = np.array([0])
 theta = (b, w)
 
@@ -107,20 +113,23 @@ L = computeCost(X, y, theta, beta)
 print("-1 L = {0}".format(L))
 i = 0
 halt = 0
-cost = []
+cost = [L]
 while (i < n_epoch and halt == 0):
     dL_db, dL_dw = computeGrad(X, y, theta, beta)
     b = theta[0]
     w = theta[1]
     # update rules go here...
     # WRITEME: write your code here to perform a step of gradient descent & record anything else desired for later
+    ##############################################################################
     b = b - alpha * dL_db
     w = w - alpha * dL_dw
     theta = (b, w)
     L = computeCost(X, y, theta, beta)
-
     # WRITEME: write code to perform a check for convergence (or simply to halt early)
+    if cost[- 1] - L < eps:
+        break
     cost.append(L)
+    ##############################################################################
     print(" {0} L = {1}".format(i, L))
     i += 1
 # print parameter values found after the search
@@ -135,9 +144,9 @@ X_feat = np.expand_dims(X_test,
 
 # apply feature map to input features x1
 # WRITEME: write code to turn X_feat into a polynomial feature map (hint: you could use a loop and array concatenation)
-
-
+##############################################################################
 plt.plot(X_test, regress(X_feat, theta), label="Model")
+##############################################################################
 plt.scatter(X[:, 0], y, edgecolor='g', s=20, label="Samples")
 plt.xlabel("x")
 plt.ylabel("y")
@@ -145,8 +154,10 @@ plt.xlim((np.amin(X_test) - kludge, np.amax(X_test) + kludge))
 plt.ylim((np.amin(y) - kludge, np.amax(y) + kludge))
 plt.legend(loc="best")
 # WRITEME: write your code here to save plot to disk (look up documentation/inter-webs for matplotlib)
-# plt.savefig('scatterplot_poly.png')
+##############################################################################
+plt.savefig(folder_prefix + 'scatterplot_model_prob2_alpha_' + str(alpha) + '.png')
 plt.show()
-fig, ax = plt.subplots(1, 2)
 plt.plot(cost, 'r')
+plt.savefig(folder_prefix + 'loss_alpha_' + str(alpha) + '.png')
 plt.show()
+##############################################################################

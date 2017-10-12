@@ -27,28 +27,41 @@ Problem 3: Multivariate Regression & Classification
 # meta-parameters for program
 trial_name = 'p6_reg0'  # will add a unique sub-string to output of this program
 degree = 6  # p, degree of model (LEAVE THIS FIXED TO p = 6 FOR THIS PROBLEM)
-beta = 0.0  # regularization coefficient
-alpha = 0  # step size coefficient
-n_epoch = 1  # number of epochs (full passes through the dataset)
-eps = 0.0  # controls convergence criterion
+beta = 1  # regularization coefficient
+alpha = 1.5  # step size coefficient
+n_epoch = 100000  # number of epochs (full passes through the dataset)
+eps = 0.00001  # controls convergence criterion
+np.set_printoptions(precision=8)
+folder_prefix = './out/prob3_folder/'
 
 
 # begin simulation
 
 def sigmoid(z):
     # WRITEME: write your code here to complete the routine
-    import math
-    return 1 / (1 + math.exp(-z))
+    ##############################################################################
+    return 1 / (1 + np.exp(-z))
+    ##############################################################################
 
 
 def predict(X, theta):
     # WRITEME: write your code here to complete the routine
-    return 0.0
+    ##############################################################################
+    b, w = theta
+    h = sigmoid(b + np.dot(X, w.T))
+    # np.set_printoptions(suppress=True)
+    m = np.asarray(h > [0.5])
+    return m.astype(int)
+    ##############################################################################
 
 
 def regress(X, theta):
     # WRITEME: write your code here to complete the routine
-    return np.array([])
+    ##############################################################################
+    b, w = theta
+    h = sigmoid(b + np.dot(X, w.T))
+    return h
+    ##############################################################################
 
 
 def bernoulli_log_likelihood(p, y):
@@ -58,16 +71,28 @@ def bernoulli_log_likelihood(p, y):
 
 def computeCost(X, y, theta, beta):  # loss is now Bernoulli cross-entropy/log likelihood
     # WRITEME: write your code here to complete the routine
-    return -1.0
+    ##############################################################################
+    b, w = theta
+    m = X.shape[0]
+    A = sigmoid(np.dot(X, w.T) + b)
+    cost = (np.sum((y * np.log(A)) + (1 - y) * np.log(1 - A)) / (-m)) + (beta * np.sum(w ** 2)) / (2.0 * m)
+    ##############################################################################
+    return cost
 
 
 def computeGrad(X, y, theta, beta):
     # WRITEME: write your code here to complete the routine (
     # NOTE: you do not have to use the partial derivative symbols below, they are there to guide your thinking)
+    ##############################################################################
+    b, w = theta
     dL_dfy = None  # derivative w.r.t. to model output units (fy)
-    dL_db = None  # derivative w.r.t. model weights w
-    dL_dw = None  # derivative w.r.t model bias b
-    nabla = (dL_db, dL_dw)  # nabla represents the full gradient
+    A = sigmoid(np.dot(X, w.T) + b)
+    m = X.shape[0]
+    dL_db = np.sum(A - y) / m  # derivative w.r.t. model weights w
+    pp = np.dot(X.T, (A - y)) / m
+    dL_dw = pp + ((w * beta) / m).T  # derivative w.r.t model bias b
+    nabla = (dL_db, dL_dw.T)  # nabla represents the full gradient
+    ##############################################################################
     return nabla
 
 
@@ -79,9 +104,7 @@ negative = data2[data2['Accepted'].isin([0])]
 
 x1 = data2['Test 1']
 x2 = data2['Test 2']
-colors = [int(i % 23) for i in data2['Accepted']]
-plt.scatter(np.asarray(x1), np.asarray(x2), c=colors)
-plt.savefig('scatter_prob3_dataset.png')
+
 # apply feature map to input features x1 and x2
 cnt = 0
 for i in range(1, degree + 1):
@@ -97,10 +120,13 @@ cols = data2.shape[1]
 X2 = data2.iloc[:, 1:cols]
 y2 = data2.iloc[:, 0:1]
 
+# print data2.describe()
+
 # convert to numpy arrays and initalize the parameter array theta
 X2 = np.array(X2.values)
 y2 = np.array(y2.values)
 w = np.zeros((1, X2.shape[1]))
+# print w.shape
 b = np.array([0])
 theta = (b, w)
 
@@ -108,18 +134,25 @@ L = computeCost(X2, y2, theta, beta)
 print("-1 L = {0}".format(L))
 i = 0
 halt = 0
+cost = [L]
+
 while (i < n_epoch and halt == 0):
     dL_db, dL_dw = computeGrad(X2, y2, theta, beta)
     b = theta[0]
     w = theta[1]
     # update rules go here...
     # WRITEME: write your code here to perform a step of gradient descent & record anything else desired for later
-
+    ##############################################################################
+    b = b - alpha * dL_db
+    w = w - alpha * dL_dw
+    theta = b, w
     L = computeCost(X2, y2, theta, beta)
-
     # WRITEME: write code to perform a check for convergence (or simply to halt early)
-
+    if cost[- 1] - L < eps:
+        break
+    ##############################################################################
     print(" {0} L = {1}".format(i, L))
+    cost.append(L)
     i += 1
 # print parameter values found after the search
 print("w = ", w)
@@ -127,10 +160,11 @@ print("b = ", b)
 
 predictions = predict(X2, theta)
 # compute error (100 - accuracy)
-err = 0.0
 # WRITEME: write your code here calculate your actual classification error (using the "predictions" variable)
+##############################################################################
+err = np.sum(np.abs(predictions - y2)) / float(len(y2))
 print 'Error = {0}%'.format(err * 100.)
-
+##############################################################################
 # make contour plot
 xx, yy = np.mgrid[-5:5:.01, -5:5:.01]
 xx1 = xx.ravel()
@@ -158,5 +192,10 @@ ax.set(aspect="equal",
        xlim=(-1.5, 1.5), ylim=(-1.5, 1.5),
        xlabel="$X_1$", ylabel="$X_2$")
 # WRITEME: write your code here to save plot to disk (look up documentation/inter-webs for matplotlib)
-
+##############################################################################
+plt.savefig(folder_prefix + 'scatterplot_model_prob3_beta_' + str(beta) + '.png')
 plt.show()
+plt.plot(cost, 'r')
+plt.savefig(folder_prefix + 'loss_beta_' + str(beta) + '.png')
+plt.show()
+##############################################################################
